@@ -1,0 +1,1 @@
+{"version":3,"file":"cacheable.js","sourceRoot":"","sources":["../../src/interfaces/cacheable.ts"],"names":[],"mappings":"","sourcesContent":["export interface ICacheable {\n    is_loading: boolean;\n    source: 'new' | 'memory' | 'store' | 'server';\n    cache_last_update: number;\n    ttl?: number;\n}\n"]}

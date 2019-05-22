@@ -1,0 +1,35 @@
+import { Resource } from './resource';
+import { PathBuilder } from './services/path-builder';
+import { CacheMemory } from './services/cachememory';
+import { CacheStore } from './services/cachestore';
+import { IParamsCollection, IParamsResource, IAttributes } from './interfaces';
+import { DocumentCollection } from './document-collection';
+import { Observable, BehaviorSubject, Subject } from 'rxjs';
+import { PathCollectionBuilder } from './services/path-collection-builder';
+export declare class Service<R extends Resource = Resource> {
+    cachememory: CacheMemory;
+    cachestore: CacheStore;
+    type: string;
+    resource: typeof Resource;
+    protected path: string;
+    apiBaseUrl: string;
+    register(): Service<R> | false;
+    newResource(): R;
+    newCollection(): DocumentCollection<R>;
+    new(): R;
+    getPrePath(): string;
+    getPath(): string;
+    pathForGet(id: string, params?: IParamsResource): string;
+    get(id: string, params?: IParamsResource): Observable<R>;
+    protected getGetFromServer(path: any, resource: R, subject: Subject<R>): void;
+    getService<T extends Service<R>>(): T;
+    getOrCreateCollection(path: PathCollectionBuilder): DocumentCollection<R>;
+    getOrCreateResource(id: string): R;
+    clearCacheMemory(): boolean;
+    parseToServer(attributes: IAttributes): void;
+    parseFromServer(attributes: IAttributes): void;
+    delete(id: string, params?: Object): Observable<void>;
+    pathForAll(params?: IParamsCollection, apiBaseUrl?: string): string;
+    all(params?: IParamsCollection): Observable<DocumentCollection<R>>;
+    protected getAllFromServer(path: PathBuilder, params: IParamsCollection, temporary_collection: DocumentCollection<R>, subject: BehaviorSubject<DocumentCollection<R>>): void;
+}
