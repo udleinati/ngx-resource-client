@@ -1,13 +1,13 @@
-import { Injectable, NgModule, Optional, SkipSelf, isDevMode } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Inject, Injectable, NgModule, Optional, PLATFORM_ID, SkipSelf, isDevMode } from '@angular/core';
+import { CommonModule, isPlatformServer } from '@angular/common';
 import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
 import { isArray, isObject } from 'util';
 import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
 import Dexie from 'dexie';
+import { REQUEST } from '@nguniversal/express-engine/tokens';
 import { catchError, map, share, tap } from 'rxjs/operators';
 import { noop as noop$1 } from 'rxjs/internal/util/noop';
 import { cloneDeep, isEqual } from 'lodash';
-import { date, internet, name, random } from 'faker';
 
 /**
  * @fileoverview added by tsickle
@@ -1769,11 +1769,11 @@ function serviceIsRegistered(target, key, descriptor) {
  */
 class JsonapiConfig {
     constructor() {
-        this.url = '';
+        this.url = 'http://yourdomain/api/v1/';
         this.params_separator = '?';
         this.unify_concurrency = true;
-        this.cache_prerequests = false;
-        this.cachestore_support = false;
+        this.cache_prerequests = true;
+        this.cachestore_support = true;
         this.parameters = {
             page: {
                 number: 'page[number]',
@@ -1789,10 +1789,14 @@ class JsonapiConfig {
  */
 class Http {
     /**
+     * @param {?} request
+     * @param {?} platformId
      * @param {?} http
      * @param {?} rsJsonapiConfig
      */
-    constructor(http$$1, rsJsonapiConfig) {
+    constructor(request, platformId, http$$1, rsJsonapiConfig) {
+        this.request = request;
+        this.platformId = platformId;
         this.http = http$$1;
         this.rsJsonapiConfig = rsJsonapiConfig;
         this.get_requests = {};
@@ -1805,6 +1809,8 @@ class Http {
      */
     exec(path, method, data) {
         /** @type {?} */
+        let url = this.rsJsonapiConfig.url;
+        /** @type {?} */
         let req = {
             body: data || null,
             headers: new HttpHeaders({
@@ -1812,11 +1818,20 @@ class Http {
                 Accept: 'application/vnd.api+json'
             })
         };
+        if (isPlatformServer(this.platformId) && !url.match(/^http\:|^https\:|^\/\//)) {
+            /** @type {?} */
+            const headers = this.request.headers;
+            /** @type {?} */
+            const proto = (headers['x-forwarded-proto']) ? headers['x-forwarded-proto'].split(',')[0] : (headers['proto']) ? headers['proto'] : 'http';
+            /** @type {?} */
+            const host = (headers['x-forwarded-host']) ? headers['x-forwarded-host'].split(',')[0] : headers['host'];
+            url = `${proto}://${host}${url}`;
+        }
         // NOTE: prevent duplicate GET requests
         if (method === 'get') {
             if (!this.get_requests[path]) {
                 /** @type {?} */
-                let obs = this.http.request(method, this.rsJsonapiConfig.url + path, req).pipe(tap(() => {
+                let obs = this.http.request(method, url + path, req).pipe(tap(() => {
                     delete this.get_requests[path];
                 }), share());
                 this.get_requests[path] = obs;
@@ -1824,7 +1839,7 @@ class Http {
             }
             return this.get_requests[path];
         }
-        return this.http.request(method, this.rsJsonapiConfig.url + path, req).pipe(tap(() => {
+        return this.http.request(method, url + path, req).pipe(tap(() => {
             delete this.get_requests[path];
         }), share());
     }
@@ -1834,6 +1849,8 @@ Http.decorators = [
 ];
 /** @nocollapse */
 Http.ctorParameters = () => [
+    { type: undefined, decorators: [{ type: Optional }, { type: Inject, args: [REQUEST,] }] },
+    { type: undefined, decorators: [{ type: Inject, args: [PLATFORM_ID,] }] },
     { type: HttpClient },
     { type: JsonapiConfig }
 ];

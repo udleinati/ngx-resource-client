@@ -1,8 +1,8 @@
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@angular/core'), require('@angular/common'), require('@angular/common/http'), require('util'), require('rxjs'), require('dexie'), require('rxjs/operators'), require('rxjs/internal/util/noop'), require('lodash'), require('faker')) :
-	typeof define === 'function' && define.amd ? define(['exports', '@angular/core', '@angular/common', '@angular/common/http', 'util', 'rxjs', 'dexie', 'rxjs/operators', 'rxjs/internal/util/noop', 'lodash', 'faker'], factory) :
-	(factory((global['ngx-jsonapi'] = {}),global.ng.core,global.common,global.http,global.util,global.rxjs,global.Dexie,global.operators,global.noop,global.lodash,global.faker));
-}(this, (function (exports,core,common,http,util,rxjs,Dexie,operators,noop,lodash,faker) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@angular/core'), require('@angular/common'), require('@angular/common/http'), require('util'), require('rxjs'), require('dexie'), require('@nguniversal/express-engine/tokens'), require('rxjs/operators'), require('rxjs/internal/util/noop'), require('lodash'), require('faker')) :
+	typeof define === 'function' && define.amd ? define(['exports', '@angular/core', '@angular/common', '@angular/common/http', 'util', 'rxjs', 'dexie', '@nguniversal/express-engine/tokens', 'rxjs/operators', 'rxjs/internal/util/noop', 'lodash', 'faker'], factory) :
+	(factory((global['ngx-jsonapi'] = {}),global.ng.core,global.common,global.http,global.util,global.rxjs,global.Dexie,global.tokens,global.operators,global.noop,global.lodash,global.faker));
+}(this, (function (exports,core,common,http,util,rxjs,Dexie,tokens,operators,noop,lodash,faker) { 'use strict';
 
 Dexie = Dexie && Dexie.hasOwnProperty('default') ? Dexie['default'] : Dexie;
 
@@ -1897,11 +1897,11 @@ function serviceIsRegistered(target, key, descriptor) {
  */
 var JsonapiConfig = /** @class */ (function () {
     function JsonapiConfig() {
-        this.url = '';
+        this.url = 'http://yourdomain/api/v1/';
         this.params_separator = '?';
         this.unify_concurrency = true;
-        this.cache_prerequests = false;
-        this.cachestore_support = false;
+        this.cache_prerequests = true;
+        this.cachestore_support = true;
         this.parameters = {
             page: {
                 number: 'page[number]',
@@ -1917,10 +1917,14 @@ var JsonapiConfig = /** @class */ (function () {
  */
 var Http = /** @class */ (function () {
     /**
+     * @param {?} request
+     * @param {?} platformId
      * @param {?} http
      * @param {?} rsJsonapiConfig
      */
-    function Http(http$$1, rsJsonapiConfig) {
+    function Http(request, platformId, http$$1, rsJsonapiConfig) {
+        this.request = request;
+        this.platformId = platformId;
         this.http = http$$1;
         this.rsJsonapiConfig = rsJsonapiConfig;
         this.get_requests = {};
@@ -1934,6 +1938,8 @@ var Http = /** @class */ (function () {
     Http.prototype.exec = function (path, method, data) {
         var _this = this;
         /** @type {?} */
+        var url = this.rsJsonapiConfig.url;
+        /** @type {?} */
         var req = {
             body: data || null,
             headers: new http.HttpHeaders({
@@ -1941,11 +1947,20 @@ var Http = /** @class */ (function () {
                 Accept: 'application/vnd.api+json'
             })
         };
+        if (common.isPlatformServer(this.platformId) && !url.match(/^http\:|^https\:|^\/\//)) {
+            /** @type {?} */
+            var headers = this.request.headers;
+            /** @type {?} */
+            var proto = (headers['x-forwarded-proto']) ? headers['x-forwarded-proto'].split(',')[0] : (headers['proto']) ? headers['proto'] : 'http';
+            /** @type {?} */
+            var host = (headers['x-forwarded-host']) ? headers['x-forwarded-host'].split(',')[0] : headers['host'];
+            url = proto + "://" + host + url;
+        }
         // NOTE: prevent duplicate GET requests
         if (method === 'get') {
             if (!this.get_requests[path]) {
                 /** @type {?} */
-                var obs = this.http.request(method, this.rsJsonapiConfig.url + path, req).pipe(operators.tap(function () {
+                var obs = this.http.request(method, url + path, req).pipe(operators.tap(function () {
                     delete _this.get_requests[path];
                 }), operators.share());
                 this.get_requests[path] = obs;
@@ -1953,7 +1968,7 @@ var Http = /** @class */ (function () {
             }
             return this.get_requests[path];
         }
-        return this.http.request(method, this.rsJsonapiConfig.url + path, req).pipe(operators.tap(function () {
+        return this.http.request(method, url + path, req).pipe(operators.tap(function () {
             delete _this.get_requests[path];
         }), operators.share());
     };
@@ -1964,6 +1979,8 @@ Http.decorators = [
 ];
 /** @nocollapse */
 Http.ctorParameters = function () { return [
+    { type: undefined, decorators: [{ type: core.Optional }, { type: core.Inject, args: [tokens.REQUEST,] }] },
+    { type: undefined, decorators: [{ type: core.Inject, args: [core.PLATFORM_ID,] }] },
     { type: http.HttpClient },
     { type: JsonapiConfig }
 ]; };

@@ -4,11 +4,11 @@
  */
 export class JsonapiConfig {
     constructor() {
-        this.url = '';
+        this.url = 'http://yourdomain/api/v1/';
         this.params_separator = '?';
         this.unify_concurrency = true;
-        this.cache_prerequests = false;
-        this.cachestore_support = false;
+        this.cache_prerequests = true;
+        this.cachestore_support = true;
         this.parameters = {
             page: {
                 number: 'page[number]',
