@@ -28,8 +28,7 @@ import { Resource } from './resource';
 import { JsonapiConfig } from './jsonapi-config';
 import { Http as JsonapiHttpImported } from './sources/http.service';
 import { StoreService as JsonapiStore } from './sources/store.service';
-import { noop } from 'rxjs/internal/util/noop';
-import { throwError } from 'rxjs';
+import { throwError, noop } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 export class Core {
     /**
